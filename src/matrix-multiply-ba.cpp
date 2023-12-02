@@ -109,7 +109,7 @@ vector<vector<double>> MatrixMultiply(queue&q, vector<vector<double>>& matrix_a,
         // 等待 SYCL 任务完成
         q.wait_and_throw();
 
-        //# Create a host accessor to copy data from device to host
+        // 使用 host_accessor 来读取结果
         host_accessor h_a(buffer_c,read_only);
         for(unsigned long long i = 0; i < dimension_1; i++){
             for(unsigned long long j = 0; j < dimension_3; j++){
@@ -145,7 +145,6 @@ int main() {
     string vendor_name = "Intel";
     // string vendor_name = "AMD";
     // string vendor_name = "Nvidia";
-    //# Submit task to multiply matrices
     MyDeviceSelector selector(vendor_name);
     queue q(selector);
 

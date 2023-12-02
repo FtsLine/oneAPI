@@ -1,4 +1,3 @@
-
 ## Inter oneAPI 简介
 
 Intel oneAPI是 Intel 推出的一个开放、统一的编程模型和软件开发工具套件。
@@ -47,7 +46,7 @@ try {
 	// 等待 SYCL 任务完成
 	q.wait_and_throw();
 
-	//# Create a host accessor to copy data from device to host
+	// 使用 host_accessor 来读取结果
 	host_accessor h_a(buffer_c,read_only);
 	for(unsigned long long i = 0; i < dimension_1; i++){
 		for(unsigned long long j = 0; j < dimension_3; j++){
@@ -59,13 +58,15 @@ try {
 }
 ```
 
+这里的 flat_data_b 其实是将二维矩阵 `vector<vector<double>>` 展开为一维 `vector<double>`，buffer 类似乎不支持二维。
+
 ### Unified Shared Memory
 
 核心代码是，设置一块新的共享内存用来存放矩阵。
 
 ```cpp
 try {
-	//# USM allocation using malloc_shared
+	// 分配共享内存
 	double *MA = malloc_shared<double>(flat_data_a.size(), q);
 	memcpy(MA, flat_data_a.data(), sizeof(double) * flat_data_a.size());
 	double *MB = malloc_shared<double>(flat_data_b.size(), q);
@@ -74,7 +75,6 @@ try {
 	memcpy(MC, flat_data_c.data(), sizeof(double) * flat_data_c.size());
 
 	q.parallel_for(nd_range<2>({dimension_1, dimension_3}, {64, 64}), [=](nd_item<2> item) {
-	  //# Multiplication
 	  size_t row = item.get_global_id(0);
 	  size_t col = item.get_global_id(1);
 	  for (size_t k = 0; k < dimension_2; ++k) {
@@ -92,6 +92,9 @@ try {
 	cout << "SYCL 错误: " << e.what() << std::endl;
 }
 ```
+
+为了和使用 buffer 的方式对比，所以并没有改变上一种方式中将矩阵展开的操作。因而在并行运算的部分也需要自行寻找元素在一维数组中的位置。
+
 ### 数据
 
 一个含有 10 个矩阵的文本文件，这 10 个矩阵可以连续相乘。
@@ -99,13 +102,14 @@ try {
 ### 运行
 
 ```shell
-$ icpx -fsycl matrix-multiply-ba.cpp -o run-ba
-$ ./run-ba
+$ icpx -fsycl matrix-multiply-ba.cpp -o matrix-multiply-ba
+$ ./matrix-multiply-ba
 RUN_TIME:0.155032
-$ icpx -fsycl matrix-multiply-um.cpp -o run-um
-$ ./run-um
+$ icpx -fsycl matrix-multiply-um.cpp -o matrix-multiply-um
+$ ./matrix-multiply-um
 RUN_TIME:0.141436
 ```
+
 ### 结果
 
 得到的结果与串行计算的结果相比较，结果一致说明并行计算正确。
@@ -162,6 +166,8 @@ void MergeSort(vector<double>& nums){
 
 每次合并两个有序数组的时候，剩余其他数组也可以进行合并，所以可以并行执行。
 
+发现在 SYCL 中似乎不允许递归调用？所以使用这种方式来归并排序，而非递归形式。
+
 ### oneAPI 实现
 
 ```cpp
@@ -205,4 +211,8 @@ q.submit([&](handler &h) {
 q.wait_and_throw();
 ```
 
-其作用是将归并排序里，并行地实现多组两个有序数组的合并。
+其作用是在归并排序里，并行地实现多组两个有序数组的合并。
+
+## 完整代码
+
+完整代码和数据已经上传到 [github](https://github.com/FtsLine/oneAPI)。

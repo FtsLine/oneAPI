@@ -85,7 +85,7 @@ vector<vector<double>> MatrixMultiply(queue&q, vector<vector<double>>& matrix_a,
     }
 
     try {
-        //# USM allocation using malloc_shared
+        // 分配共享内存
         double *MA = malloc_shared<double>(flat_data_a.size(), q);
         memcpy(MA, flat_data_a.data(), sizeof(double) * flat_data_a.size());
         double *MB = malloc_shared<double>(flat_data_b.size(), q);
@@ -94,7 +94,6 @@ vector<vector<double>> MatrixMultiply(queue&q, vector<vector<double>>& matrix_a,
         memcpy(MC, flat_data_c.data(), sizeof(double) * flat_data_c.size());
 
         q.parallel_for(nd_range<2>({dimension_1, dimension_3}, {64, 64}), [=](nd_item<2> item) {
-          //# Multiplication
           size_t row = item.get_global_id(0);
           size_t col = item.get_global_id(1);
           for (size_t k = 0; k < dimension_2; ++k) {
@@ -137,7 +136,6 @@ int main() {
     string vendor_name = "Intel";
     // string vendor_name = "AMD";
     // string vendor_name = "Nvidia";
-    //# Submit task to multiply matrices
     MyDeviceSelector selector(vendor_name);
     queue q(selector);
 

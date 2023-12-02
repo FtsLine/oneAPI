@@ -105,7 +105,6 @@ int main() {
     string vendor_name = "Intel";
     // string vendor_name = "AMD";
     // string vendor_name = "Nvidia";
-    //# Submit task to multiply matrices
     MyDeviceSelector selector(vendor_name);
     queue q(selector);
 
